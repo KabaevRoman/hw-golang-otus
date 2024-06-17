@@ -9,6 +9,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func fillCache(c *Cache, capacity int) {
+	for i := 0; i < capacity; i++ {
+		(*c).Set(Key(strconv.Itoa(i)), i)
+	}
+}
+
 func TestCache(t *testing.T) {
 	t.Run("empty cache", func(t *testing.T) {
 		c := NewCache(10)
@@ -49,14 +55,100 @@ func TestCache(t *testing.T) {
 		require.Nil(t, val)
 	})
 
-	t.Run("purge logic", func(t *testing.T) {
-		// Write me
+	t.Run("exceed capacity", func(t *testing.T) {
+		capacity := 3
+		c := NewCache(capacity)
+		fillCache(&c, capacity)
+		c.Set("abc", 404)
+		_, ok := c.Get("0")
+		require.False(t, ok, "Exceeding cache capacity didn't push last element from cache")
+	})
+
+	t.Run("test value changed", func(t *testing.T) {
+		c := NewCache(3)
+		oldVal := 404
+		expectedVal := 777
+		key := Key("abc")
+		c.Set(key, oldVal)
+		c.Set(key, expectedVal)
+		value, ok := c.Get(key)
+		require.True(t, ok, "Invalid cache key presence")
+		require.Equal(t, expectedVal, value, "Invalid value from cache")
+	})
+
+	t.Run("test value changed", func(t *testing.T) {
+		c := NewCache(3)
+		oldVal := 404
+		expectedVal := 777
+		key := Key("abc")
+		c.Set(key, oldVal)
+		c.Set(key, expectedVal)
+		value, ok := c.Get(key)
+		require.True(t, ok)
+		require.Equal(t, expectedVal, value)
+	})
+
+	t.Run("test clear", func(t *testing.T) {
+		capacity := 4
+		key := Key("0")
+		expectedVal := 0
+		c := NewCache(capacity)
+		fillCache(&c, capacity)
+		val, ok := c.Get(key)
+		require.Equal(t, expectedVal, val)
+		require.True(t, ok)
+		c.Clear()
+		val, ok = c.Get(key)
+		require.False(t, ok)
+		require.Nil(t, val)
+	})
+
+	t.Run("test list works after clear", func(t *testing.T) {
+		capacity := 3
+		key := Key("2")
+		backKey := Key("0")
+		expectedKey := Key("abc")
+		expectedVal := "Unusual val"
+		c := NewCache(capacity)
+		fillCache(&c, capacity)
+		c.Clear()
+		fillCache(&c, capacity)
+		_, ok := c.Get(key)
+		require.True(t, ok)
+		c.Set(expectedKey, expectedVal)
+		_, ok = c.Get(backKey)
+		require.False(t, ok)
+		val, _ := c.Get(expectedKey)
+		require.Equal(t, expectedVal, val)
+	})
+
+	t.Run("elements are properly pushed front", func(t *testing.T) {
+		capacity := 3
+		keys := []Key{"0", "1"}
+		pushingKey := Key("abc")
+		oldestKey := Key("2")
+		c := NewCache(capacity)
+		fillCache(&c, capacity)
+		for _, key := range keys {
+			c.Get(key)
+		}
+		c.Set(pushingKey, "")
+		_, ok := c.Get(oldestKey)
+		require.False(t, ok, "Oldest element is still present in cache")
+		for _, key := range keys {
+			c.Get(key)
+		}
+		c.Set(oldestKey, "")
+		for _, key := range keys {
+			c.Set(key, "")
+		}
+		c.Set(pushingKey, "")
+		_, ok = c.Get(oldestKey)
+		require.False(t, ok, "Oldest element is still present in cache")
 	})
 }
 
-func TestCacheMultithreading(t *testing.T) {
-	t.Skip() // Remove me if task with asterisk completed.
-
+func TestCacheMultithreading(_ *testing.T) {
 	c := NewCache(10)
 	wg := &sync.WaitGroup{}
 	wg.Add(2)

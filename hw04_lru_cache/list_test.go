@@ -48,4 +48,20 @@ func TestList(t *testing.T) {
 		}
 		require.Equal(t, []int{70, 80, 60, 40, 10, 30, 50}, elems)
 	})
+
+	t.Run("single element front back are same", func(t *testing.T) {
+		l := NewList()
+		l.PushFront(10)
+		require.NotNil(t, l.Front())
+		require.Equal(t, l.Front(), l.Back())
+	})
+
+	t.Run("single element remove", func(t *testing.T) {
+		l := NewList()
+		l.PushFront(10)
+		l.Remove(l.Front())
+		require.Equal(t, 0, l.Len())
+		require.Nil(t, l.Front())
+		require.Nil(t, l.Back())
+	})
 }
