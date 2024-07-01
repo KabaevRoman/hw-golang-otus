@@ -77,10 +77,13 @@ func TestRun(t *testing.T) {
 
 		for i := 0; i < tasksCount; i++ {
 			taskSleep := time.Millisecond * time.Duration(rand.Intn(100))
+			if taskSleep == 0 {
+				taskSleep = 1
+			}
 			sumTime += taskSleep
 
 			tasks = append(tasks, func() error {
-				time.Sleep(taskSleep)
+				defer require.Eventually(t, func() bool { return true }, time.Second*100, taskSleep)
 				atomic.AddInt32(&runTasksCount, 1)
 				return nil
 			})
