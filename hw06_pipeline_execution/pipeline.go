@@ -8,28 +8,37 @@ type (
 
 type Stage func(in In) (out Out)
 
-func ExecutePipeline(in In, done In, stages ...Stage) Out {
-	doneChannel := func(in In) Out {
-		out := make(Bi)
-		go func() {
-			defer close(out)
-			for {
-				select {
-				case <-done:
+func drainChan(in In) {
+	for range in { //nolint: revive
+	}
+}
+
+func doneWrapper(in In, done In) Out {
+	out := make(Bi)
+
+	go func() {
+		defer drainChan(in)
+		defer close(out)
+		for {
+			select {
+			case <-done:
+				return
+			case data, ok := <-in:
+				if !ok {
 					return
-				case v, ok := <-in:
-					if !ok {
-						return
-					}
-					out <- v
 				}
+				out <- data
 			}
-		}()
-		return out
-	}
-	currentIn := doneChannel(in)
+		}
+	}()
+
+	return out
+}
+
+func ExecutePipeline(in In, done In, stages ...Stage) Out {
 	for _, stage := range stages {
-		currentIn = stage(doneChannel(currentIn))
+		wrapped := doneWrapper(in, done)
+		in = stage(wrapped)
 	}
-	return currentIn
+	return in
 }
