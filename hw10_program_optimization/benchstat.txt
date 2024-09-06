@@ -1,0 +1,14 @@
+goos: darwin
+goarch: arm64
+pkg: github.com/KabaevRoman/hw-golang-otus/hw10_program_optimization
+                 │    old.txt     │              new.txt               │
+                 │     sec/op     │   sec/op     vs base               │
+GetDomainStat-12   129310.6µ ± 2%   773.8µ ± 2%  -99.40% (p=0.002 n=6)
+
+                 │      old.txt      │               new.txt                │
+                 │       B/op        │     B/op      vs base                │
+GetDomainStat-12   236759.541Ki ± 0%   7.808Ki ± 1%  -100.00% (p=0.002 n=6)
+
+                 │     old.txt     │              new.txt               │
+                 │    allocs/op    │ allocs/op   vs base                │
+GetDomainStat-12   2500049.00 ± 0%   62.00 ± 0%  -100.00% (p=0.002 n=6)
