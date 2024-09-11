@@ -11,6 +11,13 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+type CustomReader struct{}
+
+func (r *CustomReader) Read(p []byte) (n int, err error) {
+	_ = p
+	return n, io.EOF
+}
+
 func TestTelnetClient(t *testing.T) {
 	t.Run("basic", func(t *testing.T) {
 		l, err := net.Listen("tcp", "127.0.0.1:")
@@ -61,5 +68,25 @@ func TestTelnetClient(t *testing.T) {
 		}()
 
 		wg.Wait()
+	})
+	t.Run("test EOF", func(t *testing.T) {
+		l, err := net.Listen("tcp", "127.0.0.1:")
+		require.NoError(t, err)
+		defer func() { require.NoError(t, l.Close()) }()
+
+		in := &CustomReader{}
+		out := &bytes.Buffer{}
+
+		timeout, err := time.ParseDuration("10s")
+		require.NoError(t, err)
+
+		client := NewTelnetClient(l.Addr().String(), timeout, io.NopCloser(in), out)
+		require.NoError(t, client.Connect())
+		defer func() { require.NoError(t, client.Close()) }()
+
+		err = client.Send()
+		require.ErrorIs(t, err, io.EOF)
+		val := <-client.Done()
+		require.Equal(t, struct{}{}, val)
 	})
 }
